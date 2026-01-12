@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Bid = require('../models/Bid');
 const Gig = require('../models/Gig');
 const { placeBidSchema } = require('../utils/validationSchemas');
@@ -66,7 +67,74 @@ const getGigBids = async (req, res) => {
     }
 };
 
+// @desc    Hire a freelancer for a bid
+// @route   PATCH /api/bids/:bidId/hire
+// @access  Private (Owner only)
+const hireBid = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const { bidId } = req.params;
+
+        const bid = await Bid.findById(bidId).session(session);
+        if (!bid) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(404).json({ message: 'Bid not found' });
+        }
+
+        const gig = await Gig.findById(bid.gigId).session(session);
+        if (!gig) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(404).json({ message: 'Gig not found' });
+        }
+
+        if (gig.ownerId.toString() !== req.user._id.toString()) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(403).json({ message: 'Not authorized to hire for this gig' });
+        }
+
+        if (gig.status !== 'open') {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({ message: 'Gig is already assigned' });
+        }
+
+        // Update chosen bid status
+        bid.status = 'hired';
+        await bid.save({ session });
+
+        // Update gig status
+        gig.status = 'assigned';
+        await gig.save({ session });
+
+        // Reject other bids
+        await Bid.updateMany(
+            { gigId: gig._id, _id: { $ne: bidId } },
+            { status: 'rejected' }
+        ).session(session);
+
+        await session.commitTransaction();
+        session.endSession();
+
+        res.status(200).json({
+            message: 'Freelancer hired successfully',
+            bid,
+            gig
+        });
+    } catch (error) {
+        await session.abortTransaction();
+        session.endSession();
+        console.error(error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
 module.exports = {
     placeBid,
     getGigBids,
+    hireBid,
 };
