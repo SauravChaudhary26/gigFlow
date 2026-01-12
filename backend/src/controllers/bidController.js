@@ -29,12 +29,25 @@ const placeBid = async (req, res) => {
             return res.status(400).json({ message: 'You cannot bid on your own gig' });
         }
 
-        const bid = await Bid.create({
+        // Create the bid
+        let bid = await Bid.create({
             gigId,
             freelancerId: req.user._id,
             message,
             bidPrice,
         });
+
+        // Populate freelancer details for the socket event and response
+        bid = await bid.populate('freelancerId', 'name email');
+
+        // Emit notification to gig owner
+        const io = req.app.get('io');
+        if (io) {
+            io.to(gig.ownerId.toString()).emit('new_bid', {
+                ...bid.toObject(),
+                gigTitle: gig.title
+            });
+        }
 
         res.status(201).json(bid);
     } catch (error) {
@@ -111,11 +124,13 @@ const hireBid = async (req, res) => {
         gig.status = 'assigned';
         await gig.save({ session });
 
-        // Reject other bids
+        // Reject other bids - Commented out based on requirements to not remove/reject other bids
+        /*
         await Bid.updateMany(
             { gigId: gig._id, _id: { $ne: bidId } },
             { status: 'rejected' }
         ).session(session);
+        */
 
         await session.commitTransaction();
         session.endSession();

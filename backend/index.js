@@ -11,6 +11,7 @@ const bidRoutes = require('./src/routes/bidRoutes');
 dotenv.config();
 
 const port = process.env.PORT || 8080;
+const frontendUrl = 'http://localhost:5173';
 
 connectDB();
 
@@ -22,8 +23,8 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:5173", // Update this with your frontend URL
-        methods: ["GET", "POST"]
+        origin: frontendUrl,
+        methods: "*"
     }
 });
 
@@ -47,7 +48,7 @@ io.on('connection', (socket) => {
 app.set('io', io);
 
 app.use(cors({
-    origin: 'http://localhost:5173', // Ensure this matches frontend
+    origin: frontendUrl,
     credentials: true,
 }));
 app.use(express.json());

@@ -7,6 +7,7 @@ interface SocketContextType {
 }
 
 const SocketContext = createContext<SocketContextType>({ socket: null });
+const backendUrl = 'http://localhost:8080';
 
 export const useSocket = () => {
     return useContext(SocketContext);
@@ -24,9 +25,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ userId, children
     useEffect(() => {
         if (!userId) return;
 
-        // Ensure this matches your backend URL.
-        // If your backend is on port 8080, use that.
-        const newSocket = io('http://localhost:8080', {
+        const newSocket = io(backendUrl, {
             query: { userId },
         });
 
@@ -37,6 +36,12 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ userId, children
             setNotification(data.message);
             // Hide notification after 5 seconds
             setTimeout(() => setNotification(null), 5000);
+        });
+
+        newSocket.on('new_bid', (data: any) => {
+             console.log('New bid received:', data);
+             setNotification(`New bid on "${data.gigTitle}": ₹${data.bidPrice}`);
+             setTimeout(() => setNotification(null), 5000);
         });
 
         return () => {

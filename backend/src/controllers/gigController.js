@@ -34,13 +34,15 @@ const createGig = async (req, res) => {
 const getAllGigs = async (req, res) => {
     try {
         const { title } = req.query;
-        let query = { status: 'open' };
+        let query = {};
 
         if (title) {
             query.title = { $regex: title, $options: 'i' };
         }
 
-        const gigs = await Gig.find(query).populate('ownerId', 'name email');
+        const gigs = await Gig.find(query)
+            .populate('ownerId', 'name email')
+            .sort({ status: 'desc', createdAt: 'desc' });
         res.status(200).json(gigs);
     } catch (error) {
         console.error(error);

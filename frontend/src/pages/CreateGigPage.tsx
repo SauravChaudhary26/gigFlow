@@ -52,10 +52,10 @@ const CreateGigPage = () => {
                         </div>
 
                         <Input
-                            label="Budget ($)"
+                            label="Budget (₹)"
                             type="number"
                             placeholder="500"
-                            {...register('budget', { required: 'Budget is required', min: { value: 5, message: 'Minimum budget is $5' } })}
+                            {...register('budget', { required: 'Budget is required', min: { value: 5, message: 'Minimum budget is ₹5' } })}
                             error={errors.budget?.message as string}
                         />
 

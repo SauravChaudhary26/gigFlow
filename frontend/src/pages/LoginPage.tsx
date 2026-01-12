@@ -14,7 +14,7 @@ const LoginPage = () => {
     const onSubmit = async (data: any) => {
         try {
             const response = await api.post('/auth/login', data);
-            login(response.data); // Assuming backend returns user object in response.data
+            login(response.data);
             navigate('/');
         } catch (error: any) {
             console.error(error);

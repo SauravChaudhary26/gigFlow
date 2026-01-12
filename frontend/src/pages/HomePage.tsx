@@ -4,7 +4,7 @@ import api from '../lib/axios';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Search, DollarSign, Clock, User } from 'lucide-react';
+import { Search, IndianRupee, Clock, User } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 
 interface Gig {
@@ -84,8 +84,12 @@ const HomePage = () => {
                             <CardHeader>
                                 <div className="flex justify-between items-start">
                                     <CardTitle className="line-clamp-1 text-xl">{gig.title}</CardTitle>
-                                    <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full font-medium">
-                                        {gig.status}
+                                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                        gig.status === 'open' 
+                                            ? 'bg-green-100 text-green-700' 
+                                            : 'bg-blue-100 text-blue-700'
+                                    }`}>
+                                        {gig.status === 'assigned' ? 'Assigned' : gig.status.toUpperCase()}
                                     </span>
                                 </div>
                                 <div className="flex items-center text-sm text-gray-500 mt-2">
@@ -99,7 +103,7 @@ const HomePage = () => {
                                 </p>
                                 <div className="flex items-center justify-between text-sm text-gray-500 mt-auto pt-4 border-t border-gray-100 dark:border-gray-700">
                                     <div className="flex items-center font-semibold text-gray-900 dark:text-gray-100">
-                                        <DollarSign className="h-4 w-4 text-green-600 mr-1" />
+                                        <IndianRupee className="h-4 w-4 text-green-600 mr-1" />
                                         {gig.budget}
                                     </div>
                                     <div className="flex items-center">

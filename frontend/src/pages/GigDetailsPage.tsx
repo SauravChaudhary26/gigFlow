@@ -4,9 +4,10 @@ import { useForm } from 'react-hook-form';
 import api from '../lib/axios';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
+import { useSocket } from '../context/SocketContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
-import { Loader2, DollarSign, User, Calendar, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, IndianRupee, User, Calendar, CheckCircle, XCircle } from 'lucide-react';
 
 interface Bid {
     _id: string;
@@ -42,6 +43,7 @@ const GigDetailsPage = () => {
     const [bids, setBids] = useState<Bid[]>([]);
     const [loading, setLoading] = useState(true);
     const [bidsLoading, setBidsLoading] = useState(false);
+    const { socket } = useSocket();
     
     // For placing a bid
     const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm();
@@ -49,22 +51,6 @@ const GigDetailsPage = () => {
     useEffect(() => {
         const fetchGigDetails = async () => {
             try {
-                const response = await api.get(`/gigs`); 
-                // Note: The provided backend snippets only showed getAllGigs filtering by query. 
-                // Assuming there is or we must rely on filtering the list or a unified get endpoint.
-                // Wait, typically there is a GET /api/gigs/:id. 
-                // Looking at provided routes: router.get('/', getAllGigs); 
-                // It seems there isn't a single gig endpoint in the snippet provided!
-                // I will assume for now I have to fetch all and find, OR simpler, I will implement the assumption that
-                // standard REST practice /api/gigs/:id exists or I should add it.
-                // Given I cannot modify backend now easily without stepping back, I will check 
-                // if I can filter the list from the response of getAllGigs.
-                // Actually, let's look at the snippets again. 
-                // Accessing `backend/src/routes/gigRoutes.js` showed `router.get('/', getAllGigs);`
-                // It does NOT have `/:id`. 
-                // However, I can fetch all and filter client side for this demo, 
-                // OR I can quick-fix backend. 
-                // Let's filter client side to be safe with "existing backend" constraint unless blocked.
                 const allGigs = await api.get('/gigs');
                 const foundGig = allGigs.data.find((g: Gig) => g._id === id);
                 
@@ -87,6 +73,22 @@ const GigDetailsPage = () => {
 
         fetchGigDetails();
     }, [id, user]);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleNewBid = (newBid: any) => {
+            if (String(newBid.gigId) === id) {
+                 setBids((prev) => [newBid, ...prev]);
+            }
+        };
+
+        socket.on('new_bid', handleNewBid);
+
+        return () => {
+            socket.off('new_bid', handleNewBid);
+        };
+    }, [socket, id]);
 
     const fetchBids = async () => {
         try {
@@ -121,7 +123,7 @@ const GigDetailsPage = () => {
             // Refresh data
             setGig(prev => prev ? { ...prev, status: 'assigned' } : null);
             setBids(prev => prev.map(b => 
-                b._id === bidId ? { ...b, status: 'hired' } : { ...b, status: 'rejected' }
+                b._id === bidId ? { ...b, status: 'hired' } : b
             ));
             alert('Freelancer hired!');
         } catch (error: any) {
@@ -146,8 +148,8 @@ const GigDetailsPage = () => {
                 <CardHeader>
                     <div className="flex justify-between items-start">
                         <CardTitle className="text-3xl">{gig.title}</CardTitle>
-                         <span className={`px-3 py-1 rounded-full text-sm font-medium ${gig.status === 'open' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                            {gig.status.toUpperCase()}
+                         <span className={`px-3 py-1 rounded-full text-sm font-medium ${gig.status === 'open' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
+                            {gig.status === 'assigned' ? 'Assigned' : gig.status.toUpperCase()}
                         </span>
                     </div>
                 </CardHeader>
@@ -158,8 +160,8 @@ const GigDetailsPage = () => {
                             Posted by {gig.ownerId.name}
                         </div>
                         <div className="flex items-center">
-                            <DollarSign className="h-5 w-5 mr-2" />
-                            Budget: ${gig.budget}
+                            <IndianRupee className="h-5 w-5 mr-2" />
+                            Budget: ₹{gig.budget}
                         </div>
                         <div className="flex items-center">
                             <Calendar className="h-5 w-5 mr-2" />
@@ -183,7 +185,7 @@ const GigDetailsPage = () => {
                         <form onSubmit={handleSubmit(onPlaceBid)} className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <Input
-                                    label="Bid Amount ($)"
+                                    label="Bid Amount (₹)"
                                     type="number"
                                     placeholder="500"
                                     {...register('bidPrice', { required: 'Bid price is required' })}
@@ -226,7 +228,7 @@ const GigDetailsPage = () => {
                                             <p className="text-sm text-gray-500">{bid.freelancerId.email}</p>
                                         </div>
                                         <div className="text-right">
-                                            <span className="text-xl font-bold text-green-600">${bid.bidPrice}</span>
+                                            <span className="text-xl font-bold text-green-600">₹{bid.bidPrice}</span>
                                             <div className="text-xs text-gray-400">
                                                 {new Date(bid.createdAt).toLocaleDateString()}
                                             </div>
@@ -238,7 +240,7 @@ const GigDetailsPage = () => {
                                     <div className="mt-4 flex justify-end items-center space-x-4">
                                         {bid.status === 'hired' && (
                                             <span className="flex items-center text-green-600 font-bold">
-                                                <CheckCircle className="h-5 w-5 mr-1" /> Hired
+                                                <CheckCircle className="h-5 w-5 mr-1" /> Assigned
                                             </span>
                                         )}
                                         {bid.status === 'rejected' && (
