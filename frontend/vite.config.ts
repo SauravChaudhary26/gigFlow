@@ -8,7 +8,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'https://gigflow-yc9a.onrender.com',
         changeOrigin: true,
         secure: false,
       },

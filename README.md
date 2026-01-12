@@ -1,6 +1,6 @@
 # GigFlow - Freelance Marketplace
 
-**Live Deployment:** [INSERT LIVE LINK HERE](#)
+**Live Deployment:** [https://gig-flow-phi.vercel.app/login](#)
 
 GigFlow is a modern, real-time freelance marketplace connecting clients with skilled professionals. Built with the MERN stack (MongoDB, Express, React, Node.js), it features seamless user authentication, gig management, and real-time bidding updates.
 
