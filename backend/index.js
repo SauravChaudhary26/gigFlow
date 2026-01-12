@@ -14,9 +14,42 @@ const port = process.env.PORT || 8080;
 
 connectDB();
 
-const app = express();
+const http = require('http');
+const { Server } = require('socket.io');
 
-app.use(cors());
+const app = express();
+const server = http.createServer(app);
+
+const io = new Server(server, {
+    cors: {
+        origin: "http://localhost:5173", // Update this with your frontend URL
+        methods: ["GET", "POST"]
+    }
+});
+
+// Socket.io connection logic
+io.on('connection', (socket) => {
+    console.log('User connected:', socket.id);
+
+    // Join room based on userId
+    const userId = socket.handshake.query.userId;
+    if (userId) {
+        socket.join(userId);
+        console.log(`User ${userId} joined room ${userId}`);
+    }
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected:', socket.id);
+    });
+});
+
+// Make io accessible to routes
+app.set('io', io);
+
+app.use(cors({
+    origin: 'http://localhost:5173', // Ensure this matches frontend
+    credentials: true,
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -29,6 +62,6 @@ app.get('/', (req, res) => {
     res.send('Server is running fantastically');
 });
 
-app.listen(port, () => {
+server.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });

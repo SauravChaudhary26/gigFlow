@@ -120,6 +120,16 @@ const hireBid = async (req, res) => {
         await session.commitTransaction();
         session.endSession();
 
+        // Emit notification to freelancer
+        const io = req.app.get('io');
+        if (io) {
+            io.to(bid.freelancerId.toString()).emit('hired_notification', {
+                message: `You have been hired for ${gig.title}!`,
+                gigId: gig._id,
+                gigTitle: gig.title
+            });
+        }
+
         res.status(200).json({
             message: 'Freelancer hired successfully',
             bid,
